@@ -1,0 +1,15 @@
+opam-version: "1.2"
+maintainer:   [ "Anil Madhavapeddy <anil@recoil.org>" ]
+authors:      [ "Mindy Preston"]
+homepage:     "https://github.com/avsm/opam-tagger"
+dev-repo:     "https://github.com/avsm/opam-tagger.git"
+bug-reports:  "https://github.com/avsm/opam-tagger/issues"
+license:      "ISC"
+tags:         ["org:mirage" "org:ocamllabs"]
+build: ["ocaml" "pkg/pkg.ml" "build" "--pinned" "%{pinned}%" "--tests" "false" ]
+depends: [
+  "ocamlfind" {build}
+  "ocamlbuild" {build}
+  "opam-format"
+  "cmdliner"
+]

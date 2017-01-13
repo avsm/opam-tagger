@@ -1,0 +1,3 @@
+PKG fmt opam-format cmdliner
+S src
+B _build

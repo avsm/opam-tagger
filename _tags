@@ -1,0 +1,2 @@
+true: annot, bin_annot, safe_string, principal, debug, strict_sequence
+true: package(unix opam-format cmdliner fmt)
