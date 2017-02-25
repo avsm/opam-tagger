@@ -24,7 +24,7 @@ open Cmdliner
 
 let file =
   let doc = "The opam file to modify tags" in
-  Arg.(value & pos 0 string "opam" & info [] ~docv:"FILE" ~doc)
+  Arg.(value & pos 0 file "opam" & info [] ~docv:"FILE" ~doc)
 
 let set =
   let doc = "Set this tag within the opam file. Can be specified multiple times for more than one tag." in
