@@ -12,19 +12,22 @@ let add_tag ({OF.tags;_} as t) tag =
 
 let del_tag ({OF.tags;_} as t) tag =
   OF.with_tags (List.filter ((<>) tag) tags) t
- 
-let main file atags xtags =
+
+let handle_file atags xtags file =
   OpamFile.make (OpamFilename.of_string file) |> fun f ->
   OF.read f |> fun t ->
   List.fold_left add_tag t atags |> fun t' ->
   List.fold_left del_tag t' xtags |> fun t' ->
   if t <> t' then OF.write_with_preserved_format f t'
 
+let main atags xtags files =
+  List.iter (handle_file atags xtags) files
+
 open Cmdliner
 
-let file =
-  let doc = "The opam file to modify tags" in
-  Arg.(value & pos 0 string "opam" & info [] ~docv:"FILE" ~doc)
+let files =
+  let doc = "The opam file(s) to modify tags" in
+  Arg.(value & pos_all file ["opam"] & info [] ~docv:"FILE" ~doc)
 
 let set =
   let doc = "Set this tag within the opam file. Can be specified multiple times for more than one tag." in
@@ -40,7 +43,7 @@ let info =
   Term.info "opam-tagger" ~version:"1.0" ~doc ~man
 
 let () =
-  let t = Term.(const main $ file $ set $ rm) in
+  let t = Term.(const main $ set $ rm $ files) in
   match Term.eval (t, info) with `Ok () -> () | _ -> exit 1
 
 (*---------------------------------------------------------------------------
