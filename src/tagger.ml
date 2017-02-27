@@ -13,15 +13,30 @@ let add_tag ({OF.tags;_} as t) tag =
 let del_tag ({OF.tags;_} as t) tag =
   OF.with_tags (List.filter ((<>) tag) tags) t
 
-let handle_file atags xtags file =
+let parse_filtered_constraints str =
+  let lexbuf = Lexing.from_string str in
+  let value = OpamBaseParser.value OpamLexer.token lexbuf in
+  let filtered_constraints =
+    let open OpamFormat.V in
+    (package_formula `Conj (filtered_constraints ext_version)) in
+  let pos = ("", 0, 0) in
+  filtered_constraints.OpamPp.parse ~pos value
+
+let add_dep ({OF.depends; _} as t) new_deps =
+  let new_deps = parse_filtered_constraints new_deps in
+  OF.with_depends (OpamFormula.And (depends, new_deps)) t
+
+let handle_file ~atags ~xtags ~deps file =
   OpamFile.make (OpamFilename.of_string file) |> fun f ->
   OF.read f |> fun t ->
-  List.fold_left add_tag t atags |> fun t' ->
-  List.fold_left del_tag t' xtags |> fun t' ->
-  if t <> t' then OF.write_with_preserved_format f t'
+  let t0 = t in
+  List.fold_left add_tag t atags |> fun t ->
+  List.fold_left del_tag t xtags |> fun t ->
+  List.fold_left add_dep t deps  |> fun t ->
+  if t <> t0 then OF.write_with_preserved_format f t
 
-let main atags xtags files =
-  List.iter (handle_file atags xtags) files
+let main ~atags ~xtags ~deps files =
+  List.iter (handle_file ~atags ~xtags ~deps) files
 
 open Cmdliner
 
@@ -37,13 +52,19 @@ let rm =
   let doc = "Remove this tag within the opam file. Can be specified multiple times for more than one tag." in
   Arg.(value & opt_all string [] & info ["d"; "del-tag"] ~doc ~docv:"TAG")
 
+let deps =
+  let doc = {|Add this dependency to the opam file, for example
+              $(b,"foo" {build & >= "1.0"}).|} in
+  Arg.(value & opt_all string [] & info ["add-dep"] ~doc ~docv:"DEP")
+
 let info =
   let doc = "manipulate tags within OPAM package description files." in
   let man = [ `S "BUGS"; `P "Please email $(i,mirageos-devel@lists.xenproject.org) or file an issue at $(i,https://github.com/avsm/opam-tagger/issues)" ] in
   Term.info "opam-tagger" ~version:"1.0" ~doc ~man
 
 let () =
-  let t = Term.(const main $ set $ rm $ files) in
+  let main atags xtags deps = main ~atags ~xtags ~deps in
+  let t = Term.(const main $ set $ rm $ deps $ files) in
   match Term.eval (t, info) with `Ok () -> () | _ -> exit 1
 
 (*---------------------------------------------------------------------------
